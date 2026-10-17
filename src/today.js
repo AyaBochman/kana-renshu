@@ -1,10 +1,10 @@
 // The Today screen: the seasonal scene, a greeting, the two decks and what's due.
-import { app, $, plan, commit, go, registerView } from './app.js';
+import { app, $, esc, plan, commit, go, registerView } from './app.js';
 import { DECKS, LEVELS } from './decks.js';
 import { streak, todayString, daysBetween, isMet } from './srs.js';
 import { mountScene, currentSeason } from './scenes.js';
 import { startDeck } from './session.js';
-import { heatmapHTML, forecastHTML, troubleHTML } from './progress.js';
+import { heatmapHTML, forecastHTML, troubleHTML, levelStats } from './progress.js';
 
 const SEASON_KANJI = { spring: ['春', 'spring'], summer: ['夏', 'summer'], autumn: ['秋', 'autumn'], winter: ['冬', 'winter'] };
 const LEVEL_NOTES = { 5: 'Beginner', 4: 'Elementary', 3: 'Intermediate', 2: 'Upper intermediate', 1: 'Advanced' };
@@ -19,20 +19,10 @@ function greeting() {
   return ['こんばんは', 'Good evening'];
 }
 
-// Progress through each JLPT level of a deck. Everyday words count with N5.
-export function levelProgress(script) {
-  const start = app.state.settings.startLevel;
-  return LEVELS.map(lv => {
-    const words = app.decks[script].filter(w => (w.jlpt || 5) === lv);
-    const met = words.filter(w => isMet(app.state.cards[w.key])).length;
-    return { lv, total: words.length, met, skipped: lv > start };
-  });
-}
-
 function deckCard(script) {
   const d = DECKS[script];
   const p = plan(script);
-  const track = levelProgress(script);
+  const track = levelStats(script);
   const current = track.find(t => !t.skipped && t.met < t.total) || track[track.length - 1];
   const today = todayString();
   let nextDue = '';
@@ -59,12 +49,12 @@ function deckCard(script) {
   const steps = track.map(t => {
     const pct = t.total ? Math.round(t.met / t.total * 100) : 0;
     const cls = t.skipped ? 'skipped' : t === current ? 'current' : t.met >= t.total ? 'complete' : '';
-    return `<span class="lv ${cls}" title="N${t.lv}: ${t.met} of ${t.total} met${t.skipped ? ' (skipped)' : ''}"><i style="width:${pct}%"></i><b>N${t.lv}</b></span>`;
+    return `<span class="lv ${cls}" title="N${t.lv}: ${t.met} of ${t.total} met${t.skipped ? ' (skipped)' : ''}"><i style="width:${pct}%"></i><b>N${t.lv}</b><span class="sr">: ${t.met} of ${t.total} met</span></span>`;
   }).join('');
   return `<article class="deck">
     <div class="deck-title"><span class="deck-jp" lang="ja">${d.ja}</span><span class="deck-en">${d.en} words</span></div>
     ${body}
-    <div class="track" aria-label="Progress by JLPT level">${steps}</div>
+    <div class="track" role="group" aria-label="Progress by JLPT level">${steps}</div>
     <p class="deck-meta">Now on <b>N${current.lv}</b>: ${current.met} of ${current.total} words met</p>
   </article>`;
 }
@@ -80,8 +70,8 @@ function introCard() {
       <li><b>Check</b> the reading, hear it, and learn what it means.</li>
       <li><b>Grade</b> yourself. Words you know come back less and less often.</li>
     </ol>
-    <p class="intro-q">Where should new words start? Pick the JLPT level that matches your vocabulary. You can change it any time in Settings.</p>
-    <div class="levels-pick">${levels}</div>
+    <p class="intro-q" id="introQ">Where should new words start? Pick the JLPT level that matches your vocabulary. You can change it any time in Settings.</p>
+    <div class="levels-pick" role="radiogroup" aria-labelledby="introQ">${levels}</div>
     <button type="button" class="btn primary" data-act="intro-done">Got it</button>
   </section>`;
 }
@@ -129,7 +119,9 @@ function render() {
   naps.forEach(s => s.destroy());
   naps = [];
   const loaded = app.decks.h.length || app.decks.k.length;
-  $('todayBody').innerHTML = introCard() + (loaded ? `<div class="decks">${deckCard('h')}${deckCard('k')}</div>` : '<p class="muted">Loading words…</p>') + backupNote() + (loaded ? progressSummary() : '');
+  $('todayBody').innerHTML = introCard() + (loaded ? `<div class="decks">${deckCard('h')}${deckCard('k')}</div>`
+    : app.loadError ? `<p class="load-error">The word lists didn't load (${esc(app.loadError)}). Check your connection and reload.</p>`
+    : '<p class="muted">Loading words…</p>') + backupNote() + (loaded ? progressSummary() : '');
   document.querySelectorAll('#todayBody [data-nap]').forEach(el => naps.push(mountScene(el, 'nap')));
 }
 

@@ -277,4 +277,6 @@ the checks.
 
 ## License
 
-[MIT](LICENSE) for the code. Word data and fonts keep their own licenses, listed above.
+The code is [MIT](LICENSE). The word lists in `data/` are derived from the JLPT lists credited above
+(Creative Commons BY), so reuse them with that attribution. The fonts are under the SIL Open Font
+License ([fonts/OFL.txt](fonts/OFL.txt)).

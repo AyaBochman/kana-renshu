@@ -3,16 +3,17 @@
 // Shape (version 2):
 // {
 //   v: 2, updatedAt,
-//   cards:    { "h:さくら": { s, ivl, e, due, reps, lapses, last, mod, sus }, ... },
+//   cards:    { "h:さくら": { s, ivl, e, due, reps, lapses, rl, last, mod, sus }, ... },  (see srs.js)
 //   kana:     { h: { "さ": { o: rightCount, m: missCount } }, k: { ... } },
 //   days:     { "2026-10-13": { n: wordsReviewed, ok: rightFirstTime, h: true, k: true, done: true } },
 //   intro:    { date, h: newWordsToday, k: newWordsToday },
 //   settings: { newPerDay, startLevel, audio, fonts, kanji, theme, seenIntro, lastExport }
 // }
 
+// The key name dates from the first version; the data inside is version 2.
 const KEY = 'kana-renshu-v1';
 
-export const DEFAULT_SETTINGS = {
+const DEFAULT_SETTINGS = {
   newPerDay: 10,
   startLevel: 5,
   audio: true,
@@ -54,19 +55,22 @@ export function load() {
   }
 }
 
-let persistAsked = false;
 export function save(state) {
   try {
     localStorage.setItem(KEY, JSON.stringify(state));
+    return true;
   } catch {
     return false;
   }
-  // Ask the browser not to clear our data under storage pressure. It may say no; that's fine.
-  if (!persistAsked && typeof navigator !== 'undefined' && navigator.storage && navigator.storage.persist) {
-    persistAsked = true;
-    navigator.storage.persist().catch(() => {});
-  }
-  return true;
+}
+
+// Ask the browser not to clear our data under storage pressure. Some browsers (Firefox) show a
+// prompt, so this runs after a finished session or an export, never in the middle of practice.
+let persistAsked = false;
+export function requestPersistence() {
+  if (persistAsked || typeof navigator === 'undefined' || !navigator.storage || !navigator.storage.persist) return;
+  persistAsked = true;
+  navigator.storage.persist().catch(() => {});
 }
 export const STORAGE_KEY = KEY;
 

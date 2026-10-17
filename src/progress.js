@@ -1,12 +1,12 @@
 // The Progress screen: streak, what's coming up, progress per JLPT level, misread characters and the kana chart.
-import { app, $, registerView, squareHTML } from './app.js';
+import { app, $, esc, registerView, squareHTML } from './app.js';
 import { BASE_ROWS, DAKU_ROWS, YOON_ROWS, EXT_ROWS, UNIT } from './kana.js';
 import { DECKS, LEVELS } from './decks.js';
-import { streak, forecast, todayString, addDays, isMet, MATURE_DAYS } from './srs.js';
+import { streak, forecast, todayString, addDays, parseDay, isMet, MATURE_DAYS } from './srs.js';
 
 export function heatmapHTML() {
   const today = todayString();
-  const monday = (new Date(today + 'T12:00').getDay() + 6) % 7;
+  const monday = (parseDay(today).getDay() + 6) % 7;
   const start = addDays(today, -(14 * 7 + monday));
   let cells = '';
   for (let i = 0; i < 105; i++) {
@@ -24,7 +24,7 @@ export function forecastHTML() {
   const today = todayString();
   return h.map((hv, i) => {
     const kv = k[i], total = hv + kv;
-    const label = i === 0 ? 'Today' : i === 1 ? 'Tmrw' : new Date(addDays(today, i) + 'T12:00').toLocaleDateString(undefined, { weekday: 'short' });
+    const label = i === 0 ? 'Today' : i === 1 ? 'Tmrw' : parseDay(addDays(today, i)).toLocaleDateString(undefined, { weekday: 'short' });
     return `<div class="fc-col" title="${total} due: ${hv} hiragana, ${kv} katakana">
       <span class="fc-n">${total || ''}</span>
       <div class="fc-bar"><i class="fc-k" style="height:${kv / max * 100}%"></i><i class="fc-h" style="height:${hv / max * 100}%"></i></div>
@@ -32,23 +32,31 @@ export function forecastHTML() {
   }).join('');
 }
 
-function levelsHTML() {
+// Words met and well known per JLPT level of a deck. Everyday words count with N5.
+export function levelStats(script) {
   const start = app.state.settings.startLevel;
+  return LEVELS.map(lv => {
+    let total = 0, met = 0, known = 0;
+    for (const w of app.decks[script]) {
+      if ((w.jlpt || 5) !== lv) continue;
+      total++;
+      const st = app.state.cards[w.key];
+      if (!isMet(st)) continue;
+      met++;
+      if (st.s === 'r' && st.ivl >= MATURE_DAYS) known++;
+    }
+    return { lv, total, met, known, skipped: lv > start };
+  });
+}
+
+function levelsHTML() {
   return ['h', 'k'].map(script => {
-    const rows = LEVELS.map(lv => {
-      const words = app.decks[script].filter(w => (w.jlpt || 5) === lv);
-      let met = 0, known = 0;
-      for (const w of words) {
-        const st = app.state.cards[w.key];
-        if (!isMet(st)) continue;
-        met++;
-        if (st.s === 'r' && st.ivl >= MATURE_DAYS) known++;
-      }
-      const pct = x => (words.length ? x / words.length * 100 : 0).toFixed(1) + '%';
-      return `<div class="lvl-row${lv > start ? ' skipped' : ''}">
+    const rows = levelStats(script).map(({ lv, total, met, known, skipped }) => {
+      const pct = x => (total ? x / total * 100 : 0).toFixed(1) + '%';
+      return `<div class="lvl-row${skipped ? ' skipped' : ''}">
         <b>N${lv}</b>
-        <div class="lvl-bar"><i class="known" style="width:${pct(known)}"></i><i class="met" style="width:${pct(met - known)}"></i></div>
-        <span>${met}/${words.length}</span></div>`;
+        <div class="lvl-bar" role="img" aria-label="N${lv}: ${known} well known, ${met} met of ${total}"><i class="known" style="width:${pct(known)}"></i><i class="met" style="width:${pct(met - known)}"></i></div>
+        <span>${met}/${total}</span></div>`;
     }).join('');
     return `<div class="lvl-deck"><h3><span lang="ja">${DECKS[script].ja}</span>${DECKS[script].en}</h3>${rows}</div>`;
   }).join('');
@@ -67,6 +75,7 @@ export function troubleHTML(limit = 8) {
   return rows || '<p class="muted">Nothing yet. When you misread a character inside a word, it shows up here with how often it happened.</p>';
 }
 
+const LEVEL_NAMES = ['Not read yet', 'Often misread', 'Learning', 'Good', 'Solid'];
 function kanaLevel(script, kana) {
   const st = app.state.kana[script][kana];
   const total = st ? (st.o || 0) + (st.m || 0) : 0;
@@ -85,7 +94,8 @@ function chartFor(script) {
       if (!x) { html += '<span class="cell empty"></span>'; return; }
       const kana = ext ? x[0] : x[col];
       const romaji = (ext ? x[1] : x[2]).split('|')[0];
-      html += `<button type="button" class="cell lv${kanaLevel(script, kana)}"><span class="k" lang="ja">${kana}</span><span class="r">${romaji}</span></button>`;
+      const lv = kanaLevel(script, kana);
+      html += `<button type="button" class="cell lv${lv}" title="${esc(LEVEL_NAMES[lv])}"><span class="k" lang="ja">${kana}</span><span class="r">${romaji}</span></button>`;
     }));
     return html + '</div>';
   };
@@ -111,7 +121,9 @@ $('hideRoma').addEventListener('change', e => {
 });
 $('chartCols').addEventListener('click', e => {
   const c = e.target.closest('.cell:not(.empty)');
-  if (c) c.classList.toggle('peek');
+  if (!c || !$('chartCols').classList.contains('hide-roma')) return;
+  c.classList.toggle('peek');
+  c.setAttribute('aria-pressed', String(c.classList.contains('peek')));
 });
 
 registerView('progress', render);

@@ -1,4 +1,5 @@
 // Word decks: loading the JSON files and putting new words in the order they get introduced.
+import { seededRandom } from './random.js';
 
 export const DECKS = {
   h: { file: 'data/hiragana.json', ja: 'ひらがな', en: 'Hiragana', seed: 4127 },
@@ -16,16 +17,6 @@ export function tierOf(kana) {
   if (/[っッゃゅょャュョー]/.test(kana)) return 3;
   if (/[゙゚]/.test(kana.normalize('NFD'))) return 2;
   return 1;
-}
-
-// Small seeded random generator (mulberry32), so every device introduces words in the same order.
-function seeded(seed) {
-  return function () {
-    seed = seed + 0x6D2B79F5 | 0;
-    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
 }
 
 /**
@@ -49,7 +40,7 @@ export function prepareDeck(entries, script, seed) {
       tier: tierOf(e.kana),
     });
   }
-  const rng = seeded(seed);
+  const rng = seededRandom(seed); // the same order on every device
   const out = [];
   for (const level of LEVELS) {
     for (const tier of [1, 2, 3, 4]) {

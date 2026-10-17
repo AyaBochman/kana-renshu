@@ -26,6 +26,7 @@ for (const [script, deck] of Object.entries(DECKS)) {
       assert.ok(!wrongScript.test(e.kana), `${e.kana} mixes scripts`);
       const open = (e.meaning.match(/\(/g) || []).length, close = (e.meaning.match(/\)/g) || []).length;
       assert.equal(open, close, `unbalanced brackets in the meaning of ${e.kana}`);
+      assert.ok(!/&\w+;/.test(e.meaning), `HTML entity in the meaning of ${e.kana}`);
     }
   });
 

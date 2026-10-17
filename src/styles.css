@@ -143,7 +143,6 @@ body.in-session .tabs { display: none; }
 .ring { position: absolute; z-index: 3; pointer-events: none; overflow: visible; transform: rotate(-2deg); max-width: none; }
 .hanamaru path { fill: none; stroke: var(--pen); stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
 .hanamaru.draw path { animation: ink .9s ease-out forwards; }
-.hanamaru.still path { stroke-dashoffset: 0; }
 
 /* ---------- today ---------- */
 .greeting { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }

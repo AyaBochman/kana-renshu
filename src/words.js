@@ -82,10 +82,23 @@ $('wlTools').addEventListener('change', e => {
 });
 $('wlSearch').addEventListener('input', e => { view.q = e.target.value; view.limit = PAGE; render(); });
 $('wlMore').addEventListener('click', () => { view.limit += PAGE; render(); });
+// Re-rendering replaces the rows, so put keyboard focus back on the same control.
+function refocus(key, act) {
+  const row = [...$('wlBody').querySelectorAll('tr[data-key]')].find(r => r.dataset.key === key);
+  const target = act && row && row.nextElementSibling ? row.nextElementSibling.querySelector(`[data-act="${act}"]`) : row && row.querySelector('.row-btn');
+  if (target) target.focus({ preventScroll: true });
+}
+
 $('wlBody').addEventListener('click', e => {
   const row = e.target.closest('tr[data-key]');
   const detail = e.target.closest('tr.detail');
-  if (row && !detail) { view.open = view.open === row.dataset.key ? '' : row.dataset.key; render(); return; }
+  if (row && !detail) {
+    const key = row.dataset.key;
+    view.open = view.open === key ? '' : key;
+    render();
+    refocus(key);
+    return;
+  }
   const b = e.target.closest('[data-act]');
   if (!b || !view.open) return;
   const w = app.byKey.get(view.open);
@@ -95,11 +108,13 @@ $('wlBody').addEventListener('click', e => {
     app.state.cards[w.key] = { ...(st || { s: 'n' }), sus: !(st && st.sus), mod: Date.now() };
     commit();
     render();
+    refocus(w.key, 'suspend');
   }
   if (b.dataset.act === 'forget' && confirm(`Reset ${w.kana} to a new word? Its review history is cleared.`)) {
     app.state.cards[w.key] = { s: 'n', mod: Date.now(), ...(st && st.sus ? { sus: true } : {}) };
     commit();
     render();
+    refocus(w.key);
   }
 });
 

@@ -1,5 +1,5 @@
 // Shared app state, navigation between screens, and small drawing helpers used by several screens.
-import { load, save } from './storage.js';
+import { load, save, mergeStates } from './storage.js';
 import { deckPlan } from './srs.js';
 import { rebuildScenes } from './scenes.js';
 
@@ -11,11 +11,21 @@ export const app = {
   decks: { h: [], k: [] },
   byKey: new Map(),
   view: 'today',
+  loadError: '',
 };
 
+// If another tab saved since we last loaded or saved, fold its progress in rather than overwrite it.
+let lastSeen = app.state.updatedAt;
 export function commit() {
+  const stored = load();
+  if (stored.updatedAt > lastSeen) app.state = mergeStates(app.state, stored);
   app.state.updatedAt = Date.now();
+  lastSeen = app.state.updatedAt;
   save(app.state);
+}
+export function reloadState() {
+  app.state = load();
+  lastSeen = app.state.updatedAt;
 }
 export const plan = script => deckPlan(script, app.decks[script], app.state);
 
@@ -48,7 +58,7 @@ export function applyTheme() {
 }
 
 /* ---------- kana squares and the teacher's red pen ---------- */
-export const FONTS = [
+const FONTS = [
   { ja: '教科書体', en: 'Textbook', css: 'var(--font-hand)', w: 600 },
   { ja: 'ゴシック', en: 'Gothic', css: 'var(--font-gothic)', w: 500 },
   { ja: '明朝', en: 'Mincho', css: 'var(--font-mincho)', w: 500 },

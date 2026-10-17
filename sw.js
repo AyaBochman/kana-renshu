@@ -1,6 +1,7 @@
 // Service worker: makes the app work offline and installable.
-// Bump VERSION (and APP_VERSION in src/app.js) whenever you change any file listed in ASSETS,
-// so installed copies pick up the update.
+// Bump VERSION (together with APP_VERSION in src/app.js and "version" in package.json) whenever
+// you change any file listed in ASSETS, so installed copies pick up the update.
+// A test checks that the three match and that every app file is listed.
 const VERSION = '1.2.0';
 const CACHE = `kana-renshu-${VERSION}`;
 
@@ -22,6 +23,7 @@ const ASSETS = [
   'src/kana.js',
   'src/romaji.js',
   'src/srs.js',
+  'src/random.js',
   'src/decks.js',
   'src/storage.js',
   'data/hiragana.json',

@@ -10,6 +10,17 @@ test('the day starts at 4 a.m.', () => {
   assert.equal(todayString(new Date(2026, 9, 14, 4, 30)), '2026-10-14');
 });
 
+test('the day still starts at 4 a.m. on daylight-saving days', () => {
+  const tz = process.env.TZ;
+  process.env.TZ = 'America/New_York';
+  try {
+    assert.equal(todayString(new Date(2026, 2, 8, 4, 30)), '2026-03-08'); // clocks went forward at 2 a.m.
+    assert.equal(todayString(new Date(2026, 10, 1, 3, 30)), '2026-10-31'); // clocks went back at 2 a.m.
+  } finally {
+    if (tz === undefined) delete process.env.TZ; else process.env.TZ = tz;
+  }
+});
+
 test('a new word graded Good is due tomorrow; Easy waits four days', () => {
   assert.equal(applyGrade(null, 3, opts).st.due, addDays(T, 1));
   assert.equal(applyGrade(null, 3, opts).st.ivl, 1);

@@ -1,6 +1,6 @@
 // Settings: level, daily new words, sound, display, and backing up progress.
 import { app, $, commit, applyTheme, isTouch, registerView, APP_VERSION } from './app.js';
-import { exportFile, parseImport, mergeStates, freshState } from './storage.js';
+import { exportFile, parseImport, mergeStates, freshState, requestPersistence } from './storage.js';
 import { todayString, daysBetween, isMet } from './srs.js';
 import { speak, hasVoice, getVoiceName, speechSupported, onVoicesChanged } from './audio.js';
 
@@ -75,6 +75,7 @@ function message(text, isError = false) {
 
 $('exportBtn').addEventListener('click', async () => {
   const today = todayString();
+  const previous = app.state.settings.lastExport;
   app.state.settings.lastExport = today;
   const { filename, blob } = exportFile(app.state, today);
   const file = new File([blob], filename, { type: 'application/json' });
@@ -84,7 +85,7 @@ $('exportBtn').addEventListener('click', async () => {
       await navigator.share({ files: [file], title: 'Kana Renshū progress' });
       done = true;
     } catch (e) {
-      if (e && e.name === 'AbortError') { app.state.settings.lastExport = ''; return; }
+      if (e && e.name === 'AbortError') { app.state.settings.lastExport = previous; return; }
     }
   }
   if (!done) {
@@ -98,6 +99,7 @@ $('exportBtn').addEventListener('click', async () => {
     setTimeout(() => URL.revokeObjectURL(url), 2000);
   }
   commit();
+  requestPersistence();
   backupStatus();
   message(`Saved ${filename}.`);
 });

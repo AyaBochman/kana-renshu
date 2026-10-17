@@ -35,6 +35,7 @@
   <main>
     <!-- TODAY -->
     <section id="today">
+      <h1 class="sr">Today</h1>
       <p class="greeting" id="greeting"></p>
       <div class="banner" id="banner"></div>
       <div id="todayBody"></div>
@@ -44,7 +45,7 @@
     <section id="session" hidden>
       <div class="s-head">
         <p class="s-deck" id="sDeck"></p>
-        <div class="counters" id="counters" aria-label="Cards left"></div>
+        <div class="counters" id="counters" role="group" aria-label="Cards left"></div>
         <div class="s-actions">
           <button type="button" class="link" id="undoBtn" hidden>Undo <kbd>Z</kbd></button>
           <button type="button" class="link" id="endBtn">End <kbd>Esc</kbd></button>
@@ -62,7 +63,8 @@
           <button type="submit" class="btn primary" id="cCheck">Check</button>
         </form>
         <p class="hint" id="cHint" hidden></p>
-        <div class="reveal" id="reveal" hidden aria-live="polite">
+        <p class="sr" id="srStatus" role="status" aria-live="polite"></p>
+        <div class="reveal" id="reveal" hidden>
           <p class="verdict" id="rVerdict"></p>
           <p class="r-roma"><span id="rRoma"></span><button type="button" class="icon-btn" id="playBtn" aria-label="Play the word"></button></p>
           <p class="hint sound-note" id="soundNote" hidden></p>

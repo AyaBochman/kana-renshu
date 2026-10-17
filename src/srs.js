@@ -4,15 +4,25 @@
 // e = ease factor, due = 'YYYY-MM-DD', reps, lapses, rl = true while relearning after a lapse,
 // sus = true when suspended, mod = when it last changed (used to merge progress files).
 
-export const MAX_REVIEWS_PER_DAY = 150;
+const MAX_REVIEWS_PER_DAY = 150;
 export const MATURE_DAYS = 21;
 // Like Anki, a new day starts at 4 a.m., so practising after midnight still counts for the evening before.
-export const DAY_START_HOUR = 4;
+const DAY_START_HOUR = 4;
 
-export function dateString(d) {
+function dateString(d) {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
-export const todayString = (now = new Date()) => dateString(new Date(now.getTime() - DAY_START_HOUR * 3600e3));
+// Uses the clock hour rather than subtracting 4 hours, so daylight-saving days still switch at 4 a.m.
+export function todayString(now = new Date()) {
+  const d = new Date(now);
+  if (d.getHours() < DAY_START_HOUR) d.setDate(d.getDate() - 1);
+  return dateString(d);
+}
+// 'YYYY-MM-DD' as a local date at noon (safe from daylight-saving shifts).
+export function parseDay(ds) {
+  const [y, m, d] = ds.split('-').map(Number);
+  return new Date(y, m - 1, d, 12);
+}
 export function addDays(ds, n) {
   const [y, m, d] = ds.split('-').map(Number);
   return dateString(new Date(y, m - 1, d + n));

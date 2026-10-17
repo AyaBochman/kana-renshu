@@ -1,5 +1,6 @@
 // A practice session: show a word, check the typed reading, explain mistakes, grade, repeat.
 import { app, $, esc, plan, commit, go, isTouch, pickFont, squareHTML, drawCross, drawRing, hanamaruSVG } from './app.js';
+import { requestPersistence } from './storage.js';
 import { REVERSE, lookalikeHint } from './kana.js';
 import { matcher, judge, align, normalizeInput } from './romaji.js';
 import { applyGrade, suggestGrade, formatInterval, streak, todayString } from './srs.js';
@@ -57,9 +58,9 @@ function begin(deck, kind, queue) {
 }
 export const startDeck = (script, kind = 'daily') => begin(script, kind, buildQueue(script, kind));
 // Go through some words again without changing their schedule.
-export const startDrill = (script, keys) => begin(script, 'drill', [...keys]);
+const startDrill = (script, keys) => begin(script, 'drill', [...keys]);
 
-export function endSession() {
+function endSession() {
   session = null;
   undo = null;
   if (doneScene) { doneScene.destroy(); doneScene = null; }
@@ -193,6 +194,7 @@ function showVerdict() {
   const el = $('rVerdict');
   el.className = 'verdict ' + (right ? 'ok' : 'no');
   el.textContent = card.mistyped ? 'Counted as right' : { ok: 'Correct', long: 'Right, but watch the long vowel', empty: 'Here is the reading', wrong: 'Not quite' }[verdict];
+  $('srStatus').textContent = `${el.textContent}. ${matcher(word).romaji}: ${word.meaning}.`;
   $('rRoma').textContent = matcher(word).romaji;
   $('rMeaning').textContent = word.meaning;
   $('rKanji').textContent = app.state.settings.kanji ? word.kanji : '';
@@ -303,7 +305,6 @@ function grade(g) {
     const prev = s.cards[key];
     const wasNew = !prev || prev.s === 'n';
     const { st, requeue } = applyGrade(prev, g);
-    if (prev && prev.sus) st.sus = true;
     s.cards[key] = st;
     if (wasNew) {
       if (s.intro.date !== today) s.intro = { date: today, h: 0, k: 0 };
@@ -344,6 +345,7 @@ function finish() {
   }
   session.phase = 'done';
   input.blur();
+  requestPersistence();
   renderDone();
 }
 
@@ -376,7 +378,7 @@ function renderDone() {
         <div><b>${session.newKeys.length}</b><span>new ${session.newKeys.length === 1 ? 'word' : 'words'}</span></div>
       </div>`;
     if (session.newKeys.length) html += `<div class="vocab"><h3>New words today</h3>${vocabRows(session.newKeys)}</div>`;
-    if (missed.length) html += `<div class="vocab"><h3>Words you misread · they come back tomorrow</h3>${vocabRows(missed)}</div>`;
+    if (missed.length) html += `<div class="vocab"><h3>Words you misread</h3>${vocabRows(missed)}</div>`;
   }
   const other = session.deck === 'h' ? 'k' : 'h';
   const otherTotal = plan(other).total;
@@ -401,6 +403,10 @@ function renderDone() {
 /* ---------- keyboard ---------- */
 export function handleSessionKey(e) {
   if (!session) return false;
+  // Ignore keys while a Japanese input method is composing, and a held-down Enter
+  // (auto-repeat would otherwise check, grade and skip through cards on its own).
+  if (e.isComposing || e.keyCode === 229) return false;
+  if (e.repeat && e.key === 'Enter') return true;
   const active = document.activeElement;
   const onButton = active && active.tagName === 'BUTTON';
   if (e.key === 'Escape') { endSession(); return true; }
@@ -416,7 +422,7 @@ export function handleSessionKey(e) {
       return false;
     }
     if (/^[1-4]$/.test(e.key)) { grade(Number(e.key)); return true; }
-    if (e.key === 'Enter' && !(active && active.classList.contains('grade'))) { grade(card.suggested); return true; }
+    if (e.key === 'Enter' && !onButton) { grade(card.suggested); return true; }
     return false;
   }
   if (e.key === 'Enter' && active !== input && !onButton) { input.focus(); return true; }

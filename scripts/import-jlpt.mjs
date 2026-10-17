@@ -98,7 +98,6 @@ for (const [script, file] of Object.entries(DECK_FILES)) {
   const url = new URL(file, root);
   const deck = JSON.parse(readFileSync(url, 'utf8'));
   const byKana = new Map(deck.map(w => [w.kana, w]));
-  for (const w of deck) delete w.level; // difficulty is now worked out from the kana
   for (const [reading, e] of found) {
     const inThisDeck = script === 'k' ? KATAKANA_WORD.test(reading) : HIRAGANA_WORD.test(reading);
     if (!inThisDeck) continue;

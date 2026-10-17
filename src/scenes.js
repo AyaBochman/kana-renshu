@@ -5,6 +5,8 @@
 // Each scene has a static layer, drawn once per size/theme, and a few animated things on top,
 // redrawn about 12 times a second while the scene is on screen.
 
+import { seededRandom } from './random.js';
+
 const FPS = 12;
 const BAYER = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]];
 const NIGHT_INK = '#0d1714';
@@ -12,14 +14,7 @@ const NIGHT_INK = '#0d1714';
 /* ---------- colour and randomness ---------- */
 const rgb = h => { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
 const mix = (a, b, t) => '#' + rgb(a).map((v, i) => Math.round(v + (rgb(b)[i] - v) * t).toString(16).padStart(2, '0')).join('');
-function random(seed) {
-  return () => {
-    seed = seed + 0x6D2B79F5 | 0;
-    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
-}
+const random = seededRandom;
 
 export function currentSeason(date = new Date()) {
   const forced = new URLSearchParams(location.search).get('season');
@@ -27,7 +22,7 @@ export function currentSeason(date = new Date()) {
   const m = date.getMonth();
   return m >= 2 && m <= 4 ? 'spring' : m >= 5 && m <= 7 ? 'summer' : m >= 8 && m <= 10 ? 'autumn' : 'winter';
 }
-export function isNight() {
+function isNight() {
   const t = document.documentElement.dataset.theme;
   return t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
 }
@@ -43,12 +38,12 @@ const BASE = {
     torii: '#cc3a2c', toriiDark: '#2b2421',
     stone: '#aaa69b', stoneDark: '#8b887e', stoneLight: '#c6c2b7', lanternLight: '#e8d7b0',
     trunk: '#5b4135', trunkDark: '#41302a',
-    cat: '#2b2522', catEye: '#e9c349', catNose: '#2b2522',
+    cat: '#2b2522', catEye: '#e9c349',
     bird: '#fbfcf8', birdDark: '#2b2421', birdRed: '#cc3a2c',
     sand: '#ebe5d6', sandLine: '#d8cfba',
     rock: '#8f8b82', rockLight: '#b1ada3', rockDark: '#6c6961', moss: '#7f9b5b',
     water: '#8fb9b2', waterDark: '#76a69f', waterLight: '#d3ebe5', koi: '#e8793a', koiWhite: '#fbf6ee',
-    bamboo: '#8aa653', bambooDark: '#667d3b', bambooLight: '#a9c36f',
+    bamboo: '#8aa653', bambooDark: '#667d3b',
     wall: '#e3cb92', wallLine: '#f7f0de', wallShade: '#cdb37b', tile: '#3b3431', tileLight: '#5b524c',
   },
   night: {
@@ -60,12 +55,12 @@ const BASE = {
     torii: '#8c2e26', toriiDark: '#0f1412',
     stone: '#59605b', stoneDark: '#434944', stoneLight: '#6e756f', lanternLight: '#ffd27a',
     trunk: '#2a211c', trunkDark: '#1d1714',
-    cat: '#0b0f0d', catEye: '#ffd54a', catNose: '#0b0f0d',
+    cat: '#0b0f0d', catEye: '#ffd54a',
     bird: '#cfd8d3', birdDark: '#0f1412', birdRed: '#8c2e26',
     sand: '#2c3833', sandLine: '#25302b',
     rock: '#4b524d', rockLight: '#606862', rockDark: '#353b37', moss: '#3d5133',
     water: '#1e3a39', waterDark: '#183130', waterLight: '#4c7471', koi: '#c8652f', koiWhite: '#d9d4c9',
-    bamboo: '#4f6531', bambooDark: '#3a4b24', bambooLight: '#62793d',
+    bamboo: '#4f6531', bambooDark: '#3a4b24',
     wall: '#4e4632', wallLine: '#665e46', wallShade: '#423b2a', tile: '#121816', tileLight: '#232c29',
   },
 };
@@ -542,7 +537,10 @@ function tick(ts) {
   rafId = requestAnimationFrame(tick);
   if (ts - lastFrame < 1000 / FPS) return;
   lastFrame = ts;
-  for (const s of scenes) if (s.visible) s.render(ts / 1000);
+  let any = false;
+  for (const s of scenes) if (s.visible) { any = true; s.render(ts / 1000); }
+  // Nothing on screen (another tab, or scrolled away): sleep until a scene comes back into view.
+  if (!any) stopLoop();
 }
 function startLoop() {
   if (!rafId && !reduceMotion.matches && scenes.size) rafId = requestAnimationFrame(tick);
@@ -596,7 +594,10 @@ export function mountScene(container, kindName) {
     if (w && !spec.W && Math.abs(w - scene.width) > 2) scene.build();
   });
   resize.observe(container);
-  const seen = new IntersectionObserver(([e]) => { scene.visible = e.isIntersecting; });
+  const seen = new IntersectionObserver(([e]) => {
+    scene.visible = e.isIntersecting;
+    if (scene.visible) startLoop();
+  });
   seen.observe(canvas);
   scenes.add(scene);
   startLoop();

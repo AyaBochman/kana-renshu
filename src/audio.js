@@ -14,12 +14,13 @@ const listeners = new Set();
 
 const japaneseVoices = () => (synth ? synth.getVoices().filter(v => /^ja([-_]|$)/i.test(v.lang)) : []);
 
-// Prefer high-quality voices: enhanced/premium ones, then well-known Japanese voices, then on-device ones.
+// Prefer voices on the device (they work offline), then enhanced/premium ones, then well-known Japanese voices.
 function chooseVoice() {
   const score = v =>
-    (/premium|enhanced|natural|neural/i.test(v.name) ? 4 : 0) +
+    (v.localService ? 8 : 0) +
+    (/premium|enhanced/i.test(v.name) ? 4 : 0) +
     (/kyoko|otoya|o-ren|hattori|nanami|keita|ayumi|haruka|google/i.test(v.name) ? 2 : 0) +
-    (v.localService ? 1 : 0);
+    (/natural|neural/i.test(v.name) ? 1 : 0);
   const best = japaneseVoices().sort((a, b) => score(b) - score(a))[0];
   voiceName = best ? best.name : '';
   listeners.forEach(fn => fn());
