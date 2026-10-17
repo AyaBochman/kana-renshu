@@ -17,6 +17,11 @@
 </p>
 
 <p align="center">
+  <a href="https://ayabochman.github.io/kana-renshu/"><b>Open the app →</b></a>
+  &nbsp;·&nbsp; works in any browser, and installs on your phone or computer
+</p>
+
+<p align="center">
   <img src="docs/today.png" alt="The Today screen: greeting, seasonal scene, the hiragana and katakana decks, streak, review forecast and misread characters" width="62%">
   &nbsp;
   <img src="docs/practice.png" alt="A practice card: シーツ with シ crossed out in red pen, the reading shītsu, the meaning bedsheet, an explanation and four grade buttons" width="30%">
@@ -210,7 +215,10 @@ show up on reload.
 For the voice, the device needs a Japanese text-to-speech voice. Most have one; Settings → Sound
 explains how to add one. On iPhone, the silent switch also mutes it.
 
-**Host it.** Any static host works, with no build command and the repository root as the output:
+**Host it.** This repository is published with GitHub Pages at
+https://ayabochman.github.io/kana-renshu/ (deployed from `main`; the `.nojekyll` file tells Pages to
+serve the files as they are). Any other static host works too, with no build command and the
+repository root as the output:
 
 - **Cloudflare Pages** or **Netlify**: free, and fine with a private repository.
 - **GitHub Pages**: Settings → Pages → deploy from `main`. On a free plan the repository must be public.
