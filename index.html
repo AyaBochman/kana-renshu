@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Kana Renshū</title>
+  <meta name="description" content="Daily hiragana and katakana reading practice with real JLPT words and Anki-style reviews.">
+  <meta name="theme-color" content="#f3f5f1" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#18241f" media="(prefers-color-scheme: dark)">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Kana">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="stylesheet" href="src/styles.css">
+  <script type="module" src="src/main.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <span class="brand-jp" lang="ja">かな練習</span>
+      <span class="brand-en">Kana Renshū</span>
+    </div>
+    <nav class="tabs" id="tabs" aria-label="Main">
+      <button type="button" data-view="today" data-icon="today"><span>Today</span></button>
+      <button type="button" data-view="words" data-icon="words"><span>Words</span></button>
+      <button type="button" data-view="progress" data-icon="progress"><span>Progress</span></button>
+      <button type="button" data-view="settings" data-icon="settings"><span>Settings</span></button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- TODAY -->
+    <section id="today">
+      <p class="greeting" id="greeting"></p>
+      <div class="banner" id="banner"></div>
+      <div id="todayBody"></div>
+    </section>
+
+    <!-- SESSION -->
+    <section id="session" hidden>
+      <div class="s-head">
+        <p class="s-deck" id="sDeck"></p>
+        <div class="counters" id="counters" aria-label="Cards left"></div>
+        <div class="s-actions">
+          <button type="button" class="link" id="undoBtn" hidden>Undo <kbd>Z</kbd></button>
+          <button type="button" class="link" id="endBtn">End <kbd>Esc</kbd></button>
+        </div>
+      </div>
+      <div class="bar" aria-hidden="true"><span id="barFill"></span></div>
+
+      <div class="phase" id="phCard">
+        <p class="card-tags"><span class="tag" id="cTag"></span><span class="lvtag" id="cLevel"></span></p>
+        <div class="word-row" id="wordRow" lang="ja"></div>
+        <p class="font-label" id="cFont"></p>
+        <form class="answer-row" id="cForm" autocomplete="off">
+          <label for="cInput" class="sr">Reading in rōmaji</label>
+          <input id="cInput" type="text" lang="en" autocapitalize="none" autocorrect="off" autocomplete="off" spellcheck="false" enterkeyhint="go" placeholder="type the reading in rōmaji">
+          <button type="submit" class="btn primary" id="cCheck">Check</button>
+        </form>
+        <p class="hint" id="cHint" hidden></p>
+        <div class="reveal" id="reveal" hidden aria-live="polite">
+          <p class="verdict" id="rVerdict"></p>
+          <p class="r-roma"><span id="rRoma"></span><button type="button" class="icon-btn" id="playBtn" aria-label="Play the word"></button></p>
+          <p class="hint sound-note" id="soundNote" hidden></p>
+          <p class="r-meaning"><span id="rMeaning"></span><span class="kanji" id="rKanji" lang="ja"></span></p>
+          <div class="misreads" id="rMis" hidden></div>
+          <button type="button" class="link-inline" id="mistypedBtn" hidden>I read it right but mistyped. Count it as right</button>
+          <div class="grades" id="grades"></div>
+          <button type="button" class="btn primary" id="nextBtn" hidden>Next <kbd>Enter</kbd></button>
+          <p class="hint keys-only" id="gradeKeys"><kbd>Enter</kbd> takes the highlighted grade · <kbd>1</kbd>–<kbd>4</kbd> pick one · <kbd>P</kbd> play again</p>
+        </div>
+      </div>
+
+      <div class="phase done" id="phDone" hidden></div>
+    </section>
+
+    <!-- WORDS -->
+    <section id="words" hidden>
+      <div class="page-head"><h1><span lang="ja">単語帳</span><small>Word list</small></h1></div>
+      <div class="tools" id="wlTools">
+        <div class="seg">
+          <label><input type="radio" name="wlDeck" value="h" id="wl-h" checked><span lang="ja">ひらがな</span></label>
+          <label><input type="radio" name="wlDeck" value="k" id="wl-k"><span lang="ja">カタカナ</span></label>
+        </div>
+        <div class="seg">
+          <label><input type="radio" name="wlStatus" value="met" id="wls-met" checked><span>Met</span></label>
+          <label><input type="radio" name="wlStatus" value="all" id="wls-all"><span>All</span></label>
+          <label><input type="radio" name="wlStatus" value="suspended" id="wls-sus"><span>Suspended</span></label>
+        </div>
+        <label class="select"><span class="sr">Level</span>
+          <select id="wlLevel">
+            <option value="all">All levels</option>
+            <option value="5">N5</option><option value="4">N4</option><option value="3">N3</option><option value="2">N2</option><option value="1">N1</option>
+            <option value="0">Everyday</option>
+          </select>
+        </label>
+        <label for="wlSearch" class="sr">Search words</label>
+        <input type="search" id="wlSearch" placeholder="Search kana, rōmaji or meaning">
+      </div>
+      <p class="muted summary" id="wlSummary"></p>
+      <div class="table-wrap">
+        <table class="wl">
+          <thead><tr><th>Word</th><th>Reading</th><th>Meaning</th><th>Next</th></tr></thead>
+          <tbody id="wlBody"></tbody>
+        </table>
+      </div>
+      <button type="button" class="btn more-btn" id="wlMore" hidden>Show more</button>
+    </section>
+
+    <!-- PROGRESS -->
+    <section id="progress" hidden>
+      <div class="page-head"><h1><span lang="ja">記録</span><small>Progress</small></h1></div>
+      <div class="two-col">
+        <div>
+          <h2 class="section-title">Streak</h2>
+          <p class="streak-num" id="streakNum"></p>
+          <div class="heat" id="heat" role="img" aria-label="Practice over the last 15 weeks"></div>
+          <p class="cap">Last 15 weeks. Darker squares mean more words reviewed.</p>
+        </div>
+        <div>
+          <h2 class="section-title">Coming up</h2>
+          <div class="forecast" id="forecast"></div>
+          <p class="cap"><i class="key key-h"></i>Hiragana <i class="key key-k"></i>Katakana · words due each day</p>
+        </div>
+      </div>
+      <div class="section">
+        <h2 class="section-title">By JLPT level</h2>
+        <div class="levels" id="levels"></div>
+        <p class="cap"><i class="key key-known"></i>Well known (21+ days apart) <i class="key key-met"></i>Met · everyday words count with N5</p>
+      </div>
+      <div class="section">
+        <h2 class="section-title">Characters you misread</h2>
+        <div class="trouble" id="trouble"></div>
+      </div>
+      <div class="section">
+        <div class="page-head sub">
+          <h2 class="section-title">Kana chart <span lang="ja">五十音</span></h2>
+          <label class="check"><input type="checkbox" id="hideRoma"><span>Hide rōmaji (tap a square to check)</span></label>
+        </div>
+        <div class="legend">
+          <span><i></i>Not read yet</span>
+          <span><i class="lv1-bg"></i>Often misread</span>
+          <span><i class="lv2-bg"></i>Learning</span>
+          <span><i class="lv3-bg"></i>Good</span>
+          <span><i class="lv4-bg"></i>Solid</span>
+        </div>
+        <div class="chart-cols" id="chartCols">
+          <div><h3><span lang="ja">ひらがな</span>Hiragana</h3><div id="chartH"></div></div>
+          <div><h3><span lang="ja">カタカナ</span>Katakana</h3><div id="chartK"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="settings" hidden>
+      <div class="page-head"><h1><span lang="ja">設定</span><small>Settings</small></h1></div>
+      <form id="settingsForm" class="settings">
+        <h2 class="section-title">Practice</h2>
+        <fieldset>
+          <legend>New words start at</legend>
+          <div class="opts">
+            <div class="seg">
+              <label><input type="radio" name="startLevel" value="5" id="sl-5"><span>N5</span></label>
+              <label><input type="radio" name="startLevel" value="4" id="sl-4"><span>N4</span></label>
+              <label><input type="radio" name="startLevel" value="3" id="sl-3"><span>N3</span></label>
+              <label><input type="radio" name="startLevel" value="2" id="sl-2"><span>N2</span></label>
+              <label><input type="radio" name="startLevel" value="1" id="sl-1"><span>N1</span></label>
+            </div>
+            <p class="field-note">New words come from this JLPT level, then the harder ones. N5 also includes everyday words and phrases. Words you've already met keep their reviews.</p>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>New words a day</legend>
+          <div class="opts">
+            <div class="seg">
+              <label><input type="radio" name="newPerDay" value="5" id="np-5"><span>5</span></label>
+              <label><input type="radio" name="newPerDay" value="10" id="np-10"><span>10</span></label>
+              <label><input type="radio" name="newPerDay" value="15" id="np-15"><span>15</span></label>
+              <label><input type="radio" name="newPerDay" value="20" id="np-20"><span>20</span></label>
+              <label><input type="radio" name="newPerDay" value="30" id="np-30"><span>30</span></label>
+            </div>
+            <span class="field-note">per deck</span>
+          </div>
+        </fieldset>
+
+        <h2 class="section-title">Sound</h2>
+        <fieldset>
+          <legend>Hear the word</legend>
+          <div class="opts">
+            <label class="check"><input type="checkbox" name="audio" id="opt-audio"><span>Play each word after you answer</span></label>
+            <p class="field-note" id="voiceStatus"></p>
+            <button type="button" class="btn small" id="testVoice" hidden>Test the voice</button>
+          </div>
+        </fieldset>
+
+        <h2 class="section-title">Display</h2>
+        <fieldset>
+          <legend>Typefaces</legend>
+          <div class="opts"><label class="check"><input type="checkbox" name="fonts" id="opt-fonts"><span>Mix textbook, gothic, mincho and rounded fonts so you can read kana in any of them</span></label></div>
+        </fieldset>
+        <fieldset>
+          <legend>Kanji</legend>
+          <div class="opts"><label class="check"><input type="checkbox" name="kanji" id="opt-kanji"><span>Show how the word is usually written, next to its meaning</span></label></div>
+        </fieldset>
+        <fieldset>
+          <legend>Theme</legend>
+          <div class="opts">
+            <div class="seg">
+              <label><input type="radio" name="theme" value="system" id="th-system"><span>System</span></label>
+              <label><input type="radio" name="theme" value="light" id="th-light"><span>Notebook</span></label>
+              <label><input type="radio" name="theme" value="dark" id="th-dark"><span>Blackboard</span></label>
+            </div>
+          </div>
+        </fieldset>
+      </form>
+
+      <div class="section stack">
+        <h2 class="section-title">Backup</h2>
+        <p class="field-note" id="backupStatus"></p>
+        <p class="field-note">Progress is saved on this device only. Export a backup now and then. To use two devices, export on one and import on the other; choosing Merge keeps the most recent practice of every word from both.</p>
+        <div class="opts">
+          <button type="button" class="btn" id="exportBtn">Export progress</button>
+          <button type="button" class="btn" id="importBtn">Import progress</button>
+          <input type="file" id="importFile" accept="application/json,.json" hidden>
+        </div>
+        <div class="import-choice" id="importChoice" hidden>
+          <p id="importSummary"></p>
+          <div class="opts">
+            <button type="button" class="btn primary" data-act="merge">Merge with this device</button>
+            <button type="button" class="btn" data-act="replace">Replace this device's progress</button>
+            <button type="button" class="link" data-act="cancel">Cancel</button>
+          </div>
+        </div>
+        <p class="data-msg" id="dataMsg" role="status"></p>
+      </div>
+
+      <div class="section">
+        <h2 class="section-title">Start over</h2>
+        <button type="button" class="btn danger" id="resetBtn">Reset all progress</button>
+      </div>
+
+      <div class="section about">
+        <h2 class="section-title">About</h2>
+        <p>Kana Renshū <span id="appVersion"></span>. Free and open source under the MIT license.</p>
+        <p>JLPT vocabulary from <a href="https://github.com/jamsinclair/open-anki-jlpt-decks" target="_blank" rel="noopener">open-anki-jlpt-decks</a>, based on Jonathan Waller's JLPT lists at <a href="http://www.tanos.co.uk/jlpt/" target="_blank" rel="noopener">tanos.co.uk</a>. Fonts: Klee One, Zen Kaku Gothic New, Shippori Mincho, Zen Maru Gothic and DM Mono, under the SIL Open Font License.</p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="updateToast" role="status" hidden>
+  <span>A new version is ready.</span>
+  <button type="button" id="updateBtn">Reload</button>
+</div>
+</body>
+</html>

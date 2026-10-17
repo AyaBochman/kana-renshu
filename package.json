@@ -1,0 +1,15 @@
+{
+  "name": "kana-renshu",
+  "version": "1.2.0",
+  "description": "Daily hiragana and katakana reading practice with real JLPT words and Anki-style reviews.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "python3 -m http.server 8080",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}
